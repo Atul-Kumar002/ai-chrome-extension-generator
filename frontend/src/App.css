@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at top left, #1e3a8a, transparent 30%),
+    radial-gradient(circle at bottom right, #7c3aed, transparent 30%),
+    #020617;
+
+  color: white;
+  min-height: 100vh;
+}
+
+.container {
+  width: 95%;
+  max-width: 1400px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.hero h1 {
+  font-size: 72px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.hero p {
+  color: #cbd5e1;
+  font-size: 20px;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+
+  border-radius: 24px;
+  padding: 25px;
+}
+
+textarea {
+  width: 100%;
+  height: 350px;
+
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.1);
+
+  border-radius: 18px;
+
+  color: white;
+  font-size: 16px;
+
+  padding: 20px;
+  resize: none;
+
+  outline: none;
+}
+
+textarea::placeholder {
+  color: #94a3b8;
+}
+
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+button {
+  border: none;
+  border-radius: 14px;
+
+  padding: 14px 22px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+}
+
+.generate-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+.download-btn {
+  background: #16a34a;
+  color: white;
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+}
+
+.preview {
+  max-height: 700px;
+  overflow-y: auto;
+}
+
+.file {
+  background: #0f172a;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.file h3 {
+  margin-top: 0;
+  color: #60a5fa;
+}
+
+pre {
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: #e2e8f0;
+}
+
+.loading {
+  margin-top: 20px;
+  color: #60a5fa;
+}
+
+@media(max-width: 900px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h1 {
+    font-size: 48px;
+  }
+}
