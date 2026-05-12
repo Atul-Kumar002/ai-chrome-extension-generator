@@ -52,7 +52,6 @@ A Node.js project that generates Chrome extension code from a prompt, writes the
 ## Usage
 
 ```bash
->>>>>>> 15bfb8ca94df6a752f0cffda1a747998fd7123e8
 npm install
 npm start
 ```
@@ -69,6 +68,6 @@ backend/.env
 PORT=5000
 GROQ_API_KEY=your_key_here
 ```
-=======
+
 Then open `http://localhost:3000/download` to download the generated extension zip.
 
