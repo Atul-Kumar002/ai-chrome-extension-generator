@@ -1,4 +1,5 @@
 import express from "express";
+import projectRoutes from "./routes/projectRoutes.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import generateRoute from "./routes/generateRoute.js";
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/temp", express.static("temp"));
 
 app.use("/api/generate", generateRoute);
+app.use("/api/projects", projectRoutes);
 
 const PORT = process.env.PORT || 5000;
 
