@@ -1,5 +1,6 @@
 import express from "express";
 import { generateExtensionCode } from "../services/aiService.js";
+import { editExtensionFile } from "../services/editService.js";
 import { validateExtensionFiles } from "../services/validateService.js";
 import { writeExtensionFiles } from "../services/fileService.js";
 import { zipExtensionFolder } from "../services/zipService.js";
@@ -48,6 +49,46 @@ router.post("/", async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "Something went wrong"
+    });
+
+  }
+});
+
+// Edit file endpoint
+router.post("/edit", async (req, res) => {
+  try {
+    const { filename, currentContent, editRequest, originalPrompt } = req.body;
+
+    // Validate required fields
+    if (!filename || !currentContent || !editRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "filename, currentContent, and editRequest are required"
+      });
+    }
+
+    // Edit the file using AI
+    const editedContent = await editExtensionFile(
+      filename,
+      currentContent,
+      editRequest,
+      originalPrompt || ""
+    );
+
+    // Send response
+    res.json({
+      success: true,
+      message: "File edited successfully",
+      editedContent: editedContent
+    });
+
+  } catch (error) {
+
+    console.error("Edit Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || "Edit operation failed"
     });
 
   }

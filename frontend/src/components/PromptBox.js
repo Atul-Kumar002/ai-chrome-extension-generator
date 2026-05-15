@@ -1,15 +1,41 @@
 function PromptBox({ prompt, setPrompt, generateExtension }) {
+  const suggestions = [
+    "🔒 Password manager that securely stores login credentials",
+    "📱 Grammar checker that highlights typos and suggests fixes",
+    "🎨 Color picker tool for web designers",
+    "⏱️ Pomodoro timer with notifications",
+    "🔗 URL shortener with custom aliases",
+  ];
+
+  const insertSuggestion = (text) => {
+    setPrompt(text);
+  };
+
   return (
-    <div>
+    <div className="prompt-box">
+      <h3>What extension would you like to build?</h3>
       <textarea
-        placeholder="Describe your extension..."
+        placeholder="Describe your Chrome extension idea in detail..."
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.ctrlKey && e.key === "Enter") generateExtension();
+        }}
       />
-
-      <button onClick={generateExtension}>
-        Generate Extension
-      </button>
+      <div className="suggestions">
+        <p>Try a template:</p>
+        <div className="suggestion-chips">
+          {suggestions.map((suggestion, idx) => (
+            <button
+              key={idx}
+              className="chip"
+              onClick={() => insertSuggestion(suggestion)}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,9 +1,14 @@
 function Navbar() {
   return (
-    <div>
-      <h1>Extensio.ai</h1>
-      <p>No-Code Chrome Extension Generator</p>
-    </div>
+    <nav className="navbar">
+      <div className="navbar-container">
+        <div className="navbar-brand">
+          <span className="navbar-logo">✨</span>
+          <h2 className="navbar-title">Extensio.ai</h2>
+        </div>
+        <p className="navbar-subtitle">No-Code Chrome Extension Generator</p>
+      </div>
+    </nav>
   );
 }
 
