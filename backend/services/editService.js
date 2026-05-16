@@ -38,9 +38,9 @@ Original prompt: "${originalPrompt}"
 File to edit: ${filename}
 
 Current content:
-\`\`\`
+<START_FILE_CONTENT>
 ${currentContent}
-\`\`\`
+<END_FILE_CONTENT>
 
 Edit request: ${editRequest}
 
