@@ -5,7 +5,7 @@ import FilePreview from "../components/FilePreview";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Navbar from "../components/Navbar";
 
-function Home() {
+function Home({ onNavigate }) {
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState({});
   const [loading, setLoading] = useState(false);
@@ -108,7 +108,7 @@ function Home() {
 
   return (
     <div className="app">
-      <Navbar />
+      <Navbar onNavigate={onNavigate} />
       <div className="container">
         <div className="hero">
           <h1>✨ Extensio.ai</h1>
