@@ -1,21 +1,22 @@
 .navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(10, 20, 44, 0.72);
   color: white;
-  padding: 15px 0;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px 0;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(18px);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .navbar-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: nowrap;
+  gap: 16px;
 }
 
 .navbar-brand {
@@ -23,63 +24,58 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
   flex-shrink: 0;
 }
 
 .navbar-brand:hover {
-  transform: scale(1.05);
+  transform: translateY(-1px);
 }
 
 .navbar-logo {
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   line-height: 1;
 }
 
 .navbar-title {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  white-space: nowrap;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .navbar-subtitle {
-  margin: 0;
-  font-size: 0.8rem;
-  opacity: 0.9;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.78;
+  color: #cbd5e1;
 }
 
 .navbar-menu {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  flex-grow: 1;
   justify-content: flex-end;
-  margin-left: 20px;
+  flex-wrap: wrap;
 }
 
 .nav-link {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 16px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s ease;
-  font-size: 0.85rem;
-  font-family: inherit;
+  transition: background 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
 }
 
 .nav-link:active {
@@ -97,15 +93,15 @@
 }
 
 .hamburger-menu span {
-  width: 25px;
+  width: 26px;
   height: 3px;
   background: white;
-  border-radius: 2px;
+  border-radius: 999px;
   transition: all 0.3s ease;
 }
 
 .hamburger-menu.active span:nth-child(1) {
-  transform: rotate(45deg) translate(8px, 8px);
+  transform: rotate(45deg) translate(5px, 5px);
 }
 
 .hamburger-menu.active span:nth-child(2) {
@@ -113,27 +109,23 @@
 }
 
 .hamburger-menu.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(7px, -7px);
+  transform: rotate(-45deg) translate(5px, -5px);
 }
 
 @media (max-width: 1024px) {
-  .nav-link {
-    font-size: 0.75rem;
-    padding: 6px 10px;
-  }
-
-  .navbar-title {
-    font-size: 1.2rem;
-  }
-
   .navbar-menu {
-    gap: 8px;
+    gap: 10px;
+  }
+
+  .nav-link {
+    padding: 9px 14px;
+    font-size: 0.85rem;
   }
 }
 
 @media (max-width: 768px) {
   .navbar-container {
-    padding: 0 15px;
+    padding: 0 18px;
   }
 
   .navbar-menu {
@@ -141,30 +133,30 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: rgba(10, 20, 44, 0.98);
     flex-direction: column;
     gap: 0;
     margin-left: 0;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.28s ease;
     width: 100%;
     justify-content: flex-start;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .navbar-menu.active {
-    max-height: 400px;
+    max-height: 360px;
   }
 
   .nav-link {
     width: 100%;
     text-align: left;
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0;
-    padding: 12px 20px;
-    font-size: 0.9rem;
+    padding: 14px 20px;
+    font-size: 0.95rem;
     white-space: normal;
   }
 
@@ -173,8 +165,7 @@
   }
 
   .nav-link:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     transform: none;
   }
 
@@ -186,12 +177,8 @@
     gap: 8px;
   }
 
-  .navbar-logo {
-    font-size: 1.5rem;
-  }
-
   .navbar-title {
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
 
   .navbar-subtitle {
