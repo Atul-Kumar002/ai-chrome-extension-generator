@@ -22,6 +22,7 @@ function Navbar({ onNavigate }) {
         <div className={`navbar-menu ${menuOpen ? "active" : ""}`}>
           <button className="nav-link" onClick={() => handleNavigation("home")}>Home</button>
           <button className="nav-link" onClick={() => handleNavigation("pricing")}>Pricing</button>
+          <button className="nav-link" onClick={() => handleNavigation("dashboard")}>Dashboard</button>
           <button className="nav-link" onClick={() => handleNavigation("about")}>About Us</button>
           <button className="nav-link" onClick={() => handleNavigation("contact")}>Contact Us</button>
           <button className="nav-link" onClick={() => handleNavigation("privacy")}>Privacy Policy</button>

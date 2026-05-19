@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { generateExtension as generateExtensionAPI, editFile } from "../services/api";
+import { getProjects, saveProject } from "../services/storage";
 import PromptBox from "../components/PromptBox";
 import FilePreview from "../components/FilePreview";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -29,6 +30,22 @@ function Home({ onNavigate }) {
       setEditingFile(null);
       setEditingContent("");
       setEditPrompt("");
+
+      const newProject = {
+        id: Date.now(),
+        title: response.data.generatedTitle || response.data.title || "Untitled Extension",
+        prompt,
+        files: response.data.files || {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      saveProject(newProject);
+      console.log("Saved Projects:", getProjects());
+
+      if (onNavigate) {
+        onNavigate("dashboard");
+      }
     } catch (error) {
       alert(
         error.response?.data?.message ||

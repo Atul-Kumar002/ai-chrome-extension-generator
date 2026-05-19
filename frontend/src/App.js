@@ -4,6 +4,7 @@ import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -14,6 +15,8 @@ function App() {
         return <Home onNavigate={setCurrentPage} />;
       case "pricing":
         return <Pricing onNavigate={setCurrentPage} />;
+      case "dashboard":
+        return <Dashboard onNavigate={setCurrentPage} />;
       case "about":
         return <About onNavigate={setCurrentPage} />;
       case "contact":
