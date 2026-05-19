@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { generateExtension as generateExtensionAPI, editFile } from "../services/api";
+import { useEffect, useState } from "react";
+import { generateExtension as generateExtensionAPI, editFile, getSubscriptionStatus } from "../services/api";
 import { getProjects, saveProject } from "../services/storage";
+import { isPremiumPrompt, getPremiumNotice } from "../services/subscription";
 import PromptBox from "../components/PromptBox";
 import FilePreview from "../components/FilePreview";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Navbar from "../components/Navbar";
+import SubscriptionModal from "../components/SubscriptionModal";
 
 function Home({ onNavigate }) {
   const [prompt, setPrompt] = useState("");
@@ -13,6 +15,9 @@ function Home({ onNavigate }) {
   const [downloadUrl, setDownloadUrl] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState("");
+  const [subscriptionPlan, setSubscriptionPlan] = useState({ tier: "Free", badge: "Free" });
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [premiumReason, setPremiumReason] = useState("");
   
   // Edit request state (temporary memory)
   const [editHistory, setEditHistory] = useState([]);
@@ -20,7 +25,30 @@ function Home({ onNavigate }) {
   const [editingFile, setEditingFile] = useState(null);
   const [editPrompt, setEditPrompt] = useState("");
 
+  useEffect(() => {
+    const refreshSubscription = async () => {
+      try {
+        const response = await getSubscriptionStatus();
+        if (response.data?.subscription?.currentPlan) {
+          setSubscriptionPlan(response.data.subscription.currentPlan);
+        }
+      } catch (error) {
+        console.warn("Unable to fetch subscription status", error);
+      }
+    };
+
+    refreshSubscription();
+  }, []);
+
   const generateExtension = async () => {
+    if (isPremiumPrompt(prompt) && subscriptionPlan?.tier === "Free") {
+      setPremiumReason(getPremiumNotice());
+      setShowSubscriptionModal(true);
+      setStatusMessage(`Premium feature locked: ${getPremiumNotice()}`);
+      setStatusType("error");
+      return;
+    }
+
     try {
       setLoading(true);
       setStatusMessage("");
@@ -53,7 +81,17 @@ function Home({ onNavigate }) {
         onNavigate("dashboard");
       }
     } catch (error) {
-      setStatusMessage(`Validation Failed: ${error.response?.data?.message || "Generation failed"}`);
+      const premiumBlocked = error.response?.status === 402 || error.response?.data?.premiumRequired;
+      const unsafeDetected = error.response?.data?.message?.includes("Unsafe extension code detected");
+      if (premiumBlocked) {
+        setPremiumReason(getPremiumNotice());
+        setShowSubscriptionModal(true);
+        setStatusMessage(`Premium feature locked: ${error.response?.data?.message || getPremiumNotice()}`);
+      } else if (unsafeDetected) {
+        setStatusMessage("Unsafe extension code detected.");
+      } else {
+        setStatusMessage(`Validation Failed: ${error.response?.data?.message || "Generation failed"}`);
+      }
       setStatusType("error");
     } finally {
       setLoading(false);
@@ -95,6 +133,14 @@ function Home({ onNavigate }) {
       return;
     }
 
+    if (isPremiumPrompt(editPrompt) && subscriptionPlan?.tier === "Free") {
+      setPremiumReason(getPremiumNotice());
+      setShowSubscriptionModal(true);
+      setStatusMessage(`Premium feature locked: ${getPremiumNotice()}`);
+      setStatusType("error");
+      return;
+    }
+
     try {
       setLoading(true);
       setStatusMessage("");
@@ -115,7 +161,17 @@ function Home({ onNavigate }) {
       setEditingContent("");
       setEditPrompt("");
     } catch (error) {
-      setStatusMessage(`Validation Failed: ${error.response?.data?.message || "AI modification failed"}`);
+      const premiumBlocked = error.response?.status === 402 || error.response?.data?.premiumRequired;
+      const unsafeDetected = error.response?.data?.message?.includes("Unsafe extension code detected");
+      if (premiumBlocked) {
+        setPremiumReason(getPremiumNotice());
+        setShowSubscriptionModal(true);
+        setStatusMessage(`Premium feature locked: ${error.response?.data?.message || getPremiumNotice()}`);
+      } else if (unsafeDetected) {
+        setStatusMessage("Unsafe extension code detected.");
+      } else {
+        setStatusMessage(`Validation Failed: ${error.response?.data?.message || "AI modification failed"}`);
+      }
       setStatusType("error");
     } finally {
       setLoading(false);
@@ -124,8 +180,19 @@ function Home({ onNavigate }) {
 
   const cancelEdit = () => {
     setEditingFile(null);
-    setEditingContent("");
     setEditPrompt("");
+  };
+
+  const closeSubscriptionModal = () => {
+    setShowSubscriptionModal(false);
+    setPremiumReason("");
+  };
+
+  const handleUpgrade = () => {
+    setShowSubscriptionModal(false);
+    if (onNavigate) {
+      onNavigate("pricing");
+    }
   };
 
   const exitEditMode = () => {
@@ -298,6 +365,15 @@ function Home({ onNavigate }) {
               ))}
             </div>
           </div>
+        )}
+
+        {showSubscriptionModal && (
+          <SubscriptionModal
+            onClose={closeSubscriptionModal}
+            onUpgrade={handleUpgrade}
+            reason={premiumReason}
+            currentPlan={subscriptionPlan?.badge}
+          />
         )}
       </div>
     </div>

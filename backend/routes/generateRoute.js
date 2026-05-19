@@ -3,14 +3,15 @@ import { generateExtensionCode } from "../services/aiService.js";
 import { validateExtensionFiles } from "../services/validateService.js";
 import { writeExtensionFiles } from "../services/fileService.js";
 import { zipExtensionFolder } from "../services/zipService.js";
+import { premiumFeatureGuard } from "../middleware/subscriptionMiddleware.js";
+import { securityAuditMiddleware } from "../middleware/securityAuditMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+async function createGeneratedExtension(req, res, next) {
   try {
     const { prompt } = req.body;
 
-    // Validate prompt
     if (!prompt || prompt.trim() === "") {
       return res.status(400).json({
         success: false,
@@ -18,40 +19,45 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Generate extension files using AI
     const generatedFiles = await generateExtensionCode(prompt);
-
-    // Validate generated files
     validateExtensionFiles(generatedFiles);
+    res.locals.generatedFiles = generatedFiles;
+    next();
+  } catch (error) {
+    console.error("Generation Error:", error);
+    next(error);
+  }
+}
 
-    // Write files to temp folder
-    const folderPath = await writeExtensionFiles(generatedFiles);
-
-    // Create ZIP file
+async function packageGeneratedExtension(req, res) {
+  try {
+    const sanitizedFiles = res.locals.sanitizedFiles || res.locals.generatedFiles;
+    const folderPath = await writeExtensionFiles(sanitizedFiles);
     const zipPath = await zipExtensionFolder(folderPath);
-
-    // Convert Windows backslashes to forward slashes
     const normalizedZipPath = zipPath.replace(/\\/g, "/");
 
-    // Send response
     res.json({
       success: true,
       validationPassed: true,
       message: "Validation Passed: Extension generated successfully",
-      files: generatedFiles,
+      files: sanitizedFiles,
       downloadUrl: `http://localhost:5000/${normalizedZipPath}`
     });
-
   } catch (error) {
-
-    console.error("Generation Error:", error);
-
+    console.error("Packaging Error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Something went wrong"
+      message: error.message || "Something went wrong while packaging the extension"
     });
-
   }
-});
+}
+
+router.post(
+  "/",
+  premiumFeatureGuard,
+  createGeneratedExtension,
+  securityAuditMiddleware,
+  packageGeneratedExtension
+);
 
 export default router;

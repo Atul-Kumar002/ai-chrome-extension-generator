@@ -15,4 +15,6 @@ export const editFile = (files, targetFilename, editRequest, originalPrompt) =>
     originalPrompt,
   });
 
+export const getSubscriptionStatus = () => API.get("/subscription/status");
+
 export default API;
