@@ -1,7 +1,7 @@
 import Editor from "@monaco-editor/react";
 import { useState } from "react";
 
-function FilePreview({ files, editMode, onFileSelect }) {
+function FilePreview({ files, editMode, selectedFile, onFileSelect }) {
   const [expandedFile, setExpandedFile] = useState(null);
 
   return (
@@ -9,7 +9,16 @@ function FilePreview({ files, editMode, onFileSelect }) {
       <h2>Generated Files</h2>
 
       {Object.entries(files).map(([filename, content]) => (
-        <div className="file" key={filename}>
+        <div
+          className="file"
+          key={filename}
+          style={{
+            border: filename === selectedFile ? '1px solid #60a5fa' : '1px solid transparent',
+            borderRadius: '18px',
+            transition: 'border-color 0.2s ease',
+            marginBottom: '14px'
+          }}
+        >
           <div className="file-header" style={{ cursor: editMode ? 'pointer' : 'default' }} onClick={() => editMode && onFileSelect(filename, content)}>
             <h3>{filename}</h3>
             {editMode && <span style={{ fontSize: '12px', color: '#888' }}>Click to edit</span>}

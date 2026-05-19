@@ -7,10 +7,10 @@ const API = axios.create({
 export const generateExtension = (prompt) =>
   API.post("/generate", { prompt });
 
-export const editFile = (filename, currentContent, editRequest, originalPrompt) =>
-  API.post("/generate/edit", {
-    filename,
-    currentContent,
+export const editFile = (files, targetFilename, editRequest, originalPrompt) =>
+  API.post("/edit", {
+    files,
+    targetFile: targetFilename,
     editRequest,
     originalPrompt,
   });
