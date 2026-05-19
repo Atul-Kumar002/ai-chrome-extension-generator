@@ -36,7 +36,8 @@ router.post("/", async (req, res) => {
     // Send response
     res.json({
       success: true,
-      message: "Extension generated successfully",
+      validationPassed: true,
+      message: "Validation Passed: Extension generated successfully",
       files: generatedFiles,
       downloadUrl: `http://localhost:5000/${normalizedZipPath}`
     });

@@ -30,14 +30,17 @@ router.post("/", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Extension files edited successfully",
+      validationPassed: true,
+      message: "Validation Passed: Extension files edited successfully",
       files: editedFiles
     });
   } catch (error) {
     console.error("Edit Route Error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "AI modification failed"
+      validationPassed: false,
+      message: error.message || "AI modification failed",
+      fallbackFiles: files
     });
   }
 });

@@ -34,7 +34,7 @@ function Home({ onNavigate }) {
       setEditingFile(null);
       setEditingContent("");
       setEditPrompt("");
-      setStatusMessage("Extension generated successfully");
+      setStatusMessage(response.data.message || "Validation Passed: Extension generated successfully");
       setStatusType("success");
 
       const newProject = {
@@ -53,7 +53,7 @@ function Home({ onNavigate }) {
         onNavigate("dashboard");
       }
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || "Generation failed");
+      setStatusMessage(`Validation Failed: ${error.response?.data?.message || "Generation failed"}`);
       setStatusType("error");
     } finally {
       setLoading(false);
@@ -109,13 +109,13 @@ function Home({ onNavigate }) {
 
       const updatedFiles = response.data.files || {};
       setFiles(updatedFiles);
-      setStatusMessage("Changes applied successfully");
+      setStatusMessage(response.data.message || "Validation Passed: Changes applied successfully");
       setStatusType("success");
       setEditingFile(null);
       setEditingContent("");
       setEditPrompt("");
     } catch (error) {
-      setStatusMessage(error.response?.data?.message || "AI modification failed");
+      setStatusMessage(`Validation Failed: ${error.response?.data?.message || "AI modification failed"}`);
       setStatusType("error");
     } finally {
       setLoading(false);

@@ -38,6 +38,8 @@ export async function editExtensionFiles(
     return acc;
   }, {});
 
+  validateExtensionFiles(currentFiles);
+
   const fileBlocks = Object.entries(files)
     .map(([name, content]) => formatFileBlock(name, content))
     .join("\n");
