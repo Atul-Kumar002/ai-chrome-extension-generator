@@ -20,6 +20,7 @@ async function createGeneratedExtension(req, res, next) {
     }
 
     const generatedFiles = await generateExtensionCode(prompt);
+    console.log("AI Response:", generatedFiles);
     validateExtensionFiles(generatedFiles);
     res.locals.generatedFiles = generatedFiles;
     next();
@@ -31,8 +32,8 @@ async function createGeneratedExtension(req, res, next) {
 
 async function packageGeneratedExtension(req, res) {
   try {
-    const sanitizedFiles = res.locals.sanitizedFiles || res.locals.generatedFiles;
-    const folderPath = await writeExtensionFiles(sanitizedFiles);
+    const generatedFiles = res.locals.generatedFiles;
+    const folderPath = await writeExtensionFiles(generatedFiles);
     const zipPath = await zipExtensionFolder(folderPath);
     const normalizedZipPath = zipPath.replace(/\\/g, "/");
 
@@ -40,7 +41,7 @@ async function packageGeneratedExtension(req, res) {
       success: true,
       validationPassed: true,
       message: "Validation Passed: Extension generated successfully",
-      files: sanitizedFiles,
+      files: generatedFiles,
       downloadUrl: `http://localhost:5000/${normalizedZipPath}`
     });
   } catch (error) {

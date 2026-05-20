@@ -135,7 +135,10 @@ export function validateExtensionFiles(files) {
 
   if (errors.length > 0) {
     console.error("[validateService] Validation failed:", errors);
-    throw new Error(errors.join(" "));
+    const err = new Error(errors.join(" "));
+    err.userMessage = `Validation Failed: ${errors.join(" ")}`;
+    err.status = 400;
+    throw err;
   }
 
   console.log("[validateService] Validation passed for extension files.");

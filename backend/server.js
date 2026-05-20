@@ -1,18 +1,32 @@
 import express from "express";
-import projectRoutes from "./routes/projectRoutes.js";
 import cors from "cors";
-import dotenv from "dotenv";
+import helmet from "helmet";
+import compression from "compression";
+import projectRoutes from "./routes/projectRoutes.js";
 import generateRoute from "./routes/generateRoute.js";
 import editRoute from "./routes/editRoute.js";
 import subscriptionRoute from "./routes/subscriptionRoute.js";
-
-dotenv.config();
-console.log(process.env.GROQ_API_KEY);
+import { sanitizeRequestBody } from "./middleware/requestSanitizer.js";
+import { apiRateLimiter } from "./middleware/rateLimiter.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { logger } from "./utils/logger.js";
+import { ENV, PORT, FRONTEND_ORIGIN } from "./config/envConfig.js";
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(helmet());
+app.use(compression());
+app.use(
+  cors({
+    origin: [FRONTEND_ORIGIN, "http://localhost:3000"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(sanitizeRequestBody);
+app.use(apiRateLimiter);
 app.use("/temp", express.static("temp"));
 
 app.use("/api/generate", generateRoute);
@@ -20,8 +34,11 @@ app.use("/api/edit", editRoute);
 app.use("/api/subscription", subscriptionRoute);
 app.use("/api/projects", projectRoutes);
 
-const PORT = process.env.PORT || 5000;
+app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
+  if (ENV !== "production") {
+    logger.info(`Frontend origin allowed: ${FRONTEND_ORIGIN}`);
+  }
 });

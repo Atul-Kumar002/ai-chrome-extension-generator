@@ -33,10 +33,12 @@ export async function editExtensionFiles(
   originalPrompt = ""
 ) {
   const fileNames = ["manifest.json", "content.js", "popup.html", "popup.js"];
-  const currentFiles = fileNames.reduce((acc, name) => {
-    acc[name] = files[name] || "";
-    return acc;
-  }, {});
+  const currentFiles = {};
+  for (const name of fileNames) {
+    if (files[name] !== undefined && files[name] !== null) {
+      currentFiles[name] = files[name];
+    }
+  }
 
   validateExtensionFiles(currentFiles);
 

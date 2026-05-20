@@ -75,8 +75,9 @@ export function isPremiumPrompt(prompt) {
   return premiumKeywords.some((pattern) => pattern.test(prompt));
 }
 
-export function getCurrentSubscription() {
-  // Placeholder: Replace this stub with authenticated user data and billing lookup.
+export function getCurrentSubscription(tier = "Free") {
+  if (tier === "Premium") return premiumPlan;
+  if (tier === "Enterprise") return enterprisePlan;
   return defaultPlan;
 }
 
@@ -84,8 +85,8 @@ export function getSubscriptionPlans() {
   return [defaultPlan, premiumPlan, enterprisePlan];
 }
 
-export function buildSubscriptionStatus() {
-  const currentPlan = getCurrentSubscription();
+export function buildSubscriptionStatus(tier = "Free") {
+  const currentPlan = getCurrentSubscription(tier);
 
   return {
     currentPlan,

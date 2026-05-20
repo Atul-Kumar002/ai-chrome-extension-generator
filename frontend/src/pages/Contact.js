@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
+import { setPageMetadata } from "../utils/seo";
 import "../styles/contact.css";
 
 function Contact({ onNavigate }) {
@@ -10,6 +11,14 @@ function Contact({ onNavigate }) {
     message: ""
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setPageMetadata({
+      title: "Contact Support | Extensio.ai",
+      description: "Contact Extensio.ai for support, enterprise inquiries, or feature requests.",
+    });
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,15 +28,21 @@ function Contact({ onNavigate }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
-    console.log("Form submitted:", formData);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+    setIsSubmitting(true);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setSubmitted(true);
       setFormData({ name: "", email: "", subject: "", message: "" });
-    }, 3000);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => {
+        setSubmitted(false);
+      }, 3200);
+    }
   };
 
   return (
@@ -119,8 +134,8 @@ function Contact({ onNavigate }) {
               ></textarea>
             </div>
 
-            <button type="submit" className="submit-btn">
-              Send Message
+            <button type="submit" className="submit-btn" disabled={isSubmitting}>
+              {isSubmitting ? "Sending message..." : "Send Message"}
             </button>
 
             {submitted && (

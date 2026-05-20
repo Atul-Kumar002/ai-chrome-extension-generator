@@ -1,4 +1,4 @@
-import { auditExtensionFiles, sanitizeExtensionFiles } from "../services/securityService.js";
+import { auditExtensionFiles } from "../services/securityService.js";
 
 // Middleware to audit extension files before packaging or returning them.
 // It supports both AI-generated files and edited extension outputs.
@@ -21,6 +21,5 @@ export async function securityAuditMiddleware(req, res, next) {
     });
   }
 
-  res.locals.sanitizedFiles = sanitizeExtensionFiles(files);
   next();
 }

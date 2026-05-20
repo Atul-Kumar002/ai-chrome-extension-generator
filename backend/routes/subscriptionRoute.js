@@ -5,7 +5,8 @@ const router = express.Router();
 
 router.get("/status", async (req, res) => {
   try {
-    const status = buildSubscriptionStatus();
+    const tier = req.headers["x-subscription-tier"] || "Free";
+    const status = buildSubscriptionStatus(tier);
 
     res.json({
       success: true,

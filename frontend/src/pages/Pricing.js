@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PricingModal from "../components/PricingModal";
 import Navbar from "../components/Navbar";
+import { setPageMetadata } from "../utils/seo";
 import "../styles/pricing.css";
 
 function Pricing({ onNavigate }) {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    setPageMetadata({
+      title: "Pricing Plans | Extensio.ai",
+      description: "Extensio.ai pricing plans for teams, individuals, and enterprise-ready Chrome extension development.",
+    });
+  }, []);
 
   const plans = [
     {
@@ -146,7 +154,7 @@ function Pricing({ onNavigate }) {
       </div>
 
       {showModal && (
-        <PricingModal plan={selectedPlan} onClose={closeModal} />
+        <PricingModal plan={selectedPlan} onClose={closeModal} onNavigate={onNavigate} />
       )}
     </div>
   );

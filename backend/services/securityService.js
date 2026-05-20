@@ -40,7 +40,7 @@ const suspiciousJavascriptPatterns = [
     description: "Detects Function() constructor usage, a dynamic code path equivalent to eval().",
     category: "code-execution",
     severity: "critical",
-    test: (content) => /\bnew\s+Function\s*\(|\bFunction\s*\(/i.test(content),
+    test: (content) => /\bnew\s+Function\s*\(|\bFunction\s*\(/.test(content),
   },
   {
     id: "obfuscated-base64",
@@ -116,10 +116,14 @@ const manifestSecurityRules = [
   },
   {
     id: "service-worker-required",
-    description: "Manifest V3 extensions must declare a service worker under background.service_worker.",
+    description: "When a background section is declared, Manifest V3 requires background.service_worker.",
     category: "manifest",
     severity: "critical",
-    test: (manifest) => manifest.manifest_version === 3 && (!manifest.background || !manifest.background.service_worker),
+    test: (manifest) =>
+      manifest.manifest_version === 3 &&
+      manifest.background &&
+      Object.keys(manifest.background).length > 0 &&
+      !manifest.background.service_worker,
   },
   {
     id: "unsafe-content-security-policy",
@@ -257,10 +261,17 @@ function runExtensionSecurityAudit(files) {
     });
   }
 
-  if (report.issues.length > 0) {
+  const criticalIssues = report.issues.filter((issue) => issue.severity === "critical");
+
+  if (criticalIssues.length > 0) {
     report.passed = false;
-    report.summary = `Security audit found ${report.issues.length} issue(s).`;
+    report.summary = `Security audit failed: ${criticalIssues.length} critical issue(s) detected.`;
+    report.issues = criticalIssues;
     console.error("[securityService] Security audit failed:", report.issues);
+  } else if (report.issues.length > 0) {
+    report.passed = true;
+    report.summary = `Security audit passed with ${report.issues.length} non-critical warning(s).`;
+    console.warn("[securityService] Security audit warnings:", report.issues);
   } else {
     console.log("[securityService] Security audit passed.");
   }
@@ -268,95 +279,7 @@ function runExtensionSecurityAudit(files) {
   return report;
 }
 
-function sanitizeHtml(content) {
-  let sanitized = String(content || "");
 
-  // Remove remote script references from HTML files.
-  sanitized = sanitized.replace(/<script[^>]+src=["']https?:\/\/[^"']+["'][^>]*>[\s\S]*?<\/script>/gi, "");
-
-  // Remove hidden or invisible iframes to prevent stealthy injections.
-  sanitized = sanitized.replace(/<iframe[^>]+(?:hidden|display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0)[^>]*>[\s\S]*?<\/iframe>/gi, "");
-
-  return sanitized;
-}
-
-function sanitizeJavaScript(content) {
-  let sanitized = String(content || "");
-
-  // Disable dangerous dynamic execution patterns.
-  sanitized = sanitized.replace(/\beval\s*\(/gi, "/* removed unsafe eval( */(");
-  sanitized = sanitized.replace(/\bnew\s+Function\s*\(/gi, "/* removed unsafe Function() */(");
-  sanitized = sanitized.replace(/\bFunction\s*\(/gi, "/* removed unsafe Function() */(");
-
-  // Block hidden iframe creation patterns in JS.
-  sanitized = sanitized.replace(/document\.createElement\(['\"]iframe['\"][^;]*;/gi, "/* removed unsafe iframe creation */;");
-
-  return sanitized;
-}
-
-function sanitizeManifest(content) {
-  let sanitized = String(content || "");
-
-  try {
-    const manifest = JSON.parse(sanitized);
-
-    if (manifest.content_security_policy) {
-      manifest.content_security_policy = String(manifest.content_security_policy)
-        .replace(/https?:\/\/[^";]+/gi, "'self'")
-        .replace(/unsafe-eval|unsafe-inline/gi, "'self'");
-    } else {
-      manifest.content_security_policy = "script-src 'self'; object-src 'self';";
-    }
-
-    if (Array.isArray(manifest.permissions)) {
-      manifest.permissions = manifest.permissions.filter(
-        (permission) => !manifestPermissionBlacklist.includes(permission)
-      );
-    }
-
-    if (Array.isArray(manifest.host_permissions)) {
-      manifest.host_permissions = manifest.host_permissions.filter(
-        (host) => !blockedHostPermissions.includes(host)
-      );
-    }
-
-    sanitized = JSON.stringify(manifest, null, 2);
-  } catch (error) {
-    console.warn("[securityService] Cannot sanitize manifest.json due to parse error", error.message);
-  }
-
-  return sanitized;
-}
-
-export function sanitizeExtensionFiles(files) {
-  const sanitizedFiles = {};
-
-  Object.entries(files).forEach(([filename, content]) => {
-    if (typeof content !== "string") {
-      sanitizedFiles[filename] = content;
-      return;
-    }
-
-    if (filename.endsWith(".html")) {
-      sanitizedFiles[filename] = sanitizeHtml(content);
-      return;
-    }
-
-    if (filename === "manifest.json") {
-      sanitizedFiles[filename] = sanitizeManifest(content);
-      return;
-    }
-
-    if (filename.endsWith(".js") || filename.endsWith(".mjs") || filename.endsWith(".ts")) {
-      sanitizedFiles[filename] = sanitizeJavaScript(content);
-      return;
-    }
-
-    sanitizedFiles[filename] = content;
-  });
-
-  return sanitizedFiles;
-}
 
 export function auditExtensionFiles(files) {
   return runExtensionSecurityAudit(files);

@@ -2,14 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import "../styles/dashboard.css";
 import ProjectCard from "../components/ProjectCard";
 import { getProjects, deleteProject as removeProject, exportProjectZip, updateProject } from "../services/storage";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 function Dashboard({ onNavigate }) {
   const [projects, setProjects] = useState([]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("latest");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setProjects(getProjects());
+    const loadProjects = () => {
+      setIsLoading(true);
+      setProjects(getProjects());
+      setTimeout(() => setIsLoading(false), 200);
+    };
+
+    loadProjects();
+    window.addEventListener("extensio:projects-updated", loadProjects);
+    return () => window.removeEventListener("extensio:projects-updated", loadProjects);
   }, []);
 
   const filtered = useMemo(() => {
@@ -64,7 +74,11 @@ function Dashboard({ onNavigate }) {
       </header>
 
       <main className="dashboard-main">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="loading-state">
+            <LoadingSpinner status="Loading projects..." />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="empty-state">
             <h2>No extension projects available yet.</h2>
             <p>Create your first extension from the Home page — it will appear here.</p>
@@ -72,14 +86,14 @@ function Dashboard({ onNavigate }) {
           </div>
         ) : (
           <div className="project-grid">
-            {filtered.map(p=> (
+            {filtered.map((p) => (
               <ProjectCard
                 key={p.id}
                 project={p}
-                onOpen={()=>handleOpen(p)}
-                onDownload={()=>handleDownload(p)}
-                onEdit={(newPrompt)=>handleEditRequest(p,newPrompt)}
-                onDelete={()=>handleDelete(p.id)}
+                onOpen={() => handleOpen(p)}
+                onDownload={() => handleDownload(p)}
+                onEdit={(newPrompt) => handleEditRequest(p, newPrompt)}
+                onDelete={() => handleDelete(p.id)}
               />
             ))}
           </div>

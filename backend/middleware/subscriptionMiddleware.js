@@ -1,8 +1,10 @@
-import { requiresPremium, getPremiumNotice } from "../services/subscriptionService.js";
+import { requiresPremium, getPremiumNotice, getCurrentSubscription } from "../services/subscriptionService.js";
 
 export function premiumFeatureGuard(req, res, next) {
   const prompt = req.body.prompt || req.body.editRequest || "";
-  const isPremiumRequest = requiresPremium(prompt);
+  const tier = req.headers["x-subscription-tier"] || "Free";
+  const userPlan = getCurrentSubscription(tier);
+  const isPremiumRequest = requiresPremium(prompt, userPlan);
 
   if (isPremiumRequest) {
     console.warn("[subscriptionMiddleware] Premium access blocked for prompt:", prompt);

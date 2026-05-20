@@ -1,7 +1,20 @@
 import "../styles/pricing-modal.css";
 
-function PricingModal({ plan, onClose }) {
+function PricingModal({ plan, onClose, onNavigate }) {
   if (!plan) return null;
+
+  const handleChoosePlan = () => {
+    let tier = "Free";
+    if (plan.name === "Professional") tier = "Premium";
+    if (plan.name === "Enterprise") tier = "Enterprise";
+
+    localStorage.setItem("extensio_subscription_tier", tier);
+    alert(`Successfully upgraded to the ${plan.name} plan!`);
+    onClose();
+    if (onNavigate) {
+      onNavigate("home");
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -18,7 +31,7 @@ function PricingModal({ plan, onClose }) {
           <span className="modal-price-period">{plan.period}</span>
         </div>
 
-        <button className="modal-cta-button">
+        <button className="modal-cta-button" onClick={handleChoosePlan}>
           {plan.cta}
         </button>
 

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { generateExtension as generateExtensionAPI, editFile, getSubscriptionStatus } from "../services/api";
+import { useEffect, useRef, useState } from "react";
+import { generateExtension as generateExtensionAPI, editFile, getSubscriptionStatus, saveManualEdit } from "../services/api";
 import { getProjects, saveProject } from "../services/storage";
 import { isPremiumPrompt, getPremiumNotice } from "../services/subscription";
+import { setPageMetadata } from "../utils/seo";
 import PromptBox from "../components/PromptBox";
 import FilePreview from "../components/FilePreview";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -10,7 +11,8 @@ import SubscriptionModal from "../components/SubscriptionModal";
 
 function Home({ onNavigate }) {
   const [prompt, setPrompt] = useState("");
-  const [files, setFiles] = useState({});
+  const [generatedFiles, setGeneratedFiles] = useState({});
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -18,14 +20,19 @@ function Home({ onNavigate }) {
   const [subscriptionPlan, setSubscriptionPlan] = useState({ tier: "Free", badge: "Free" });
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [premiumReason, setPremiumReason] = useState("");
+  const previewRef = useRef(null);
   
   // Edit request state (temporary memory)
   const [editHistory, setEditHistory] = useState([]);
   const [editMode, setEditMode] = useState(false);
-  const [editingFile, setEditingFile] = useState(null);
   const [editPrompt, setEditPrompt] = useState("");
 
   useEffect(() => {
+    setPageMetadata({
+      title: "Generate Chrome Extensions | Extensio.ai",
+      description: "Create Chrome extensions with AI instantly and securely with Extensio.ai.",
+    });
+
     const refreshSubscription = async () => {
       try {
         const response = await getSubscriptionStatus();
@@ -38,6 +45,24 @@ function Home({ onNavigate }) {
     };
 
     refreshSubscription();
+
+    // Load last opened project from dashboard
+    const lastOpenedId = localStorage.getItem("extensio_last_opened");
+    if (lastOpenedId) {
+      try {
+        const projects = getProjects();
+        const project = projects.find((p) => String(p.id) === String(lastOpenedId));
+        if (project) {
+          setPrompt(project.prompt || "");
+          setGeneratedFiles(project.files || {});
+          const firstFile = Object.keys(project.files || {})[0] || null;
+          setSelectedFile(firstFile);
+          localStorage.removeItem("extensio_last_opened");
+        }
+      } catch (err) {
+        console.error("Error loading last opened project:", err);
+      }
+    }
   }, []);
 
   const generateExtension = async () => {
@@ -55,7 +80,16 @@ function Home({ onNavigate }) {
       setStatusType("");
 
       const response = await generateExtensionAPI(prompt);
-      setFiles(response.data.files);
+      console.log("Generated Files:", response.data);
+
+      const responseFiles = response.data?.files;
+      if (!responseFiles || typeof responseFiles !== "object" || Object.keys(responseFiles).length === 0) {
+        throw new Error("Generation failed. Invalid extension structure.");
+      }
+
+      const firstFile = Object.keys(responseFiles)[0];
+      setGeneratedFiles(responseFiles);
+      setSelectedFile(firstFile || null);
       setDownloadUrl(response.data.downloadUrl);
       setEditHistory([]);
       setEditMode(false);
@@ -69,16 +103,16 @@ function Home({ onNavigate }) {
         id: Date.now(),
         title: response.data.generatedTitle || response.data.title || "Untitled Extension",
         prompt,
-        files: response.data.files || {},
+        files: responseFiles,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
       saveProject(newProject);
-      console.log("Saved Projects:", getProjects());
+      window.dispatchEvent(new CustomEvent("extensio:projects-updated"));
 
-      if (onNavigate) {
-        onNavigate("dashboard");
+      if (previewRef.current) {
+        previewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     } catch (error) {
       const premiumBlocked = error.response?.status === 402 || error.response?.data?.premiumRequired;
@@ -90,7 +124,7 @@ function Home({ onNavigate }) {
       } else if (unsafeDetected) {
         setStatusMessage("Unsafe extension code detected.");
       } else {
-        setStatusMessage(`Validation Failed: ${error.response?.data?.message || "Generation failed"}`);
+        setStatusMessage(`Validation Failed: ${error.response?.data?.message || error.message || "Generation failed"}`);
       }
       setStatusType("error");
     } finally {
@@ -99,37 +133,47 @@ function Home({ onNavigate }) {
   };
 
   const toggleEditMode = () => {
-    setEditMode(!editMode);
-    if (editMode) {
-      // Exiting edit mode
-      setEditingFile(null);
-      setEditingContent("");
-      setEditPrompt("");
-    }
-  };
-
-  const handleEditRequest = (filename, content) => {
-    setEditingFile(filename);
     setEditPrompt("");
     setStatusMessage("");
     setStatusType("");
-    // Store in history for reference
-    setEditHistory(prev => [
+    setEditMode(!editMode);
+  };
+
+  const handleFileChange = (filename, content) => {
+    setGeneratedFiles(prev => ({
       ...prev,
-      { filename, originalContent: content, timestamp: Date.now() }
-    ]);
+      [filename]: content
+    }));
   };
 
   const applyEdit = async () => {
-    if (!editingFile) {
-      setStatusMessage("Please select a file to edit first.");
-      setStatusType("error");
-      return;
-    }
-
     if (!editPrompt.trim()) {
-      setStatusMessage("Please describe the changes you want to make.");
-      setStatusType("error");
+      // Save manual edits
+      try {
+        setLoading(true);
+        setStatusMessage("");
+        setStatusType("");
+
+        const response = await saveManualEdit(generatedFiles);
+
+        const updatedFiles = response.data.files || {};
+        setGeneratedFiles(updatedFiles);
+        setDownloadUrl(response.data.downloadUrl);
+        setStatusMessage(response.data.message || "Manual changes saved successfully");
+        setStatusType("success");
+        
+        if (selectedFile && updatedFiles[selectedFile]) {
+          setSelectedFile(selectedFile);
+        } else {
+          const firstFile = Object.keys(updatedFiles)[0] || null;
+          setSelectedFile(firstFile);
+        }
+      } catch (error) {
+        setStatusMessage(error.response?.data?.message || "Failed to save manual changes");
+        setStatusType("error");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -147,19 +191,31 @@ function Home({ onNavigate }) {
       setStatusType("");
 
       const response = await editFile(
-        files,
-        editingFile,
+        generatedFiles,
+        "", // Target is empty string for the whole extension
         editPrompt,
         prompt
       );
 
       const updatedFiles = response.data.files || {};
-      setFiles(updatedFiles);
+      setGeneratedFiles(updatedFiles);
+      setDownloadUrl(response.data.downloadUrl);
       setStatusMessage(response.data.message || "Validation Passed: Changes applied successfully");
       setStatusType("success");
-      setEditingFile(null);
-      setEditingContent("");
+      
+      // Store in session history for reference
+      setEditHistory(prev => [
+        ...prev,
+        { editRequest: editPrompt, timestamp: Date.now() }
+      ]);
+      
       setEditPrompt("");
+      if (selectedFile && updatedFiles[selectedFile]) {
+        setSelectedFile(selectedFile);
+      } else {
+        const firstFile = Object.keys(updatedFiles)[0] || null;
+        setSelectedFile(firstFile);
+      }
     } catch (error) {
       const premiumBlocked = error.response?.status === 402 || error.response?.data?.premiumRequired;
       const unsafeDetected = error.response?.data?.message?.includes("Unsafe extension code detected");
@@ -179,8 +235,10 @@ function Home({ onNavigate }) {
   };
 
   const cancelEdit = () => {
-    setEditingFile(null);
+    setEditMode(false);
     setEditPrompt("");
+    setStatusMessage("");
+    setStatusType("");
   };
 
   const closeSubscriptionModal = () => {
@@ -197,8 +255,6 @@ function Home({ onNavigate }) {
 
   const exitEditMode = () => {
     setEditMode(false);
-    setEditingFile(null);
-    setEditingContent("");
     setEditPrompt("");
   };
 
@@ -217,29 +273,64 @@ function Home({ onNavigate }) {
           <div className="card">
             <>
               <PromptBox 
-                prompt={prompt}
-                setPrompt={setPrompt}
-                generateExtension={generateExtension}
+                prompt={editMode ? editPrompt : prompt}
+                setPrompt={editMode ? setEditPrompt : setPrompt}
+                onSubmit={editMode ? applyEdit : generateExtension}
+                editMode={editMode}
               />
               <div className="button-group">
-                <button
-                  className="generate-btn"
-                  onClick={generateExtension}
-                  disabled={loading || !prompt.trim()}
-                >
-                  🚀 Generate Extension
-                </button>
-
-                {downloadUrl && (
-                  <a
-                    href={downloadUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <button className="download-btn">
-                      ⬇️ Download ZIP
+                 {editMode ? (
+                  <>
+                    <button
+                      className="generate-btn"
+                      onClick={applyEdit}
+                      disabled={loading}
+                    >
+                      {editPrompt.trim() ? "✏️ Apply AI Edit" : "💾 Save Manual Changes"}
                     </button>
-                  </a>
+                    {downloadUrl && (
+                      <a
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ marginLeft: '12px' }}
+                      >
+                        <button className="download-btn" type="button">
+                          ⬇️ Download ZIP
+                        </button>
+                      </a>
+                    )}
+                    <button
+                      className="cancel-btn"
+                      onClick={cancelEdit}
+                      disabled={loading}
+                      style={{ marginLeft: '12px' }}
+                    >
+                      ❌ Cancel Edit
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="generate-btn"
+                      onClick={generateExtension}
+                      disabled={loading || !prompt.trim()}
+                    >
+                      🚀 Generate Extension
+                    </button>
+
+                    {downloadUrl && (
+                      <a
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <button className="download-btn">
+                          ⬇️ Download ZIP
+                        </button>
+                      </a>
+                    )}
+                  </>
                 )}
               </div>
             </>
@@ -247,15 +338,28 @@ function Home({ onNavigate }) {
             {loading && <LoadingSpinner />}
           </div>
 
-          <div className="card preview">
-            {Object.keys(files).length === 0 && !loading ? (
-              <div className="empty-state">
-                <p>🎨 No files generated yet</p>
-                <small>Describe your extension and click Generate to get started</small>
+          <div className="card preview" ref={previewRef}>
+            {loading && <LoadingSpinner />}
+
+            {!loading && statusMessage && (
+              <div
+                className={`status-banner status-${statusType || "info"}`}
+                style={{
+                  marginBottom: "16px",
+                  padding: "14px 18px",
+                  borderRadius: "14px",
+                  backgroundColor: statusType === "success" ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                  border: `1px solid ${statusType === "success" ? "rgba(34, 197, 94, 0.24)" : "rgba(239, 68, 68, 0.24)"}`,
+                  color: statusType === "success" ? "#166534" : "#991b1b",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {statusMessage}
               </div>
-            ) : loading ? (
-              <LoadingSpinner />
-            ) : (
+            )}
+
+            {!loading && generatedFiles && Object.keys(generatedFiles).length > 0 ? (
               <>
                 <div style={{ marginBottom: '16px' }}>
                   <button
@@ -275,82 +379,21 @@ function Home({ onNavigate }) {
                     {editMode ? '✕ Exit Edit Mode' : '✏️ Edit Mode'}
                   </button>
                 </div>
-                {editMode && editingFile && (
-                  <div className="file-selector" style={{
-                    padding: '12px',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '4px',
-                    marginBottom: '12px',
-                    maxHeight: '150px',
-                    overflowY: 'auto'
-                  }}>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold' }}>Editing: <span style={{ color: '#2196F3' }}>{editingFile}</span></p>
-                  </div>
-                )}
-                <FilePreview 
-                  files={files}
-                  editMode={editMode}
-                  selectedFile={editingFile}
-                  onFileSelect={handleEditRequest}
+                <FilePreview
+                  files={generatedFiles}
+                  selectedFile={selectedFile}
+                  onFileSelect={(filename) => setSelectedFile(filename)}
+                  readOnly={!editMode}
+                  onFileChange={handleFileChange}
                 />
 
-                {statusMessage && (
-                  <div style={{
-                    marginTop: '18px',
-                    padding: '14px 18px',
-                    borderRadius: '14px',
-                    backgroundColor: statusType === 'success' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                    border: `1px solid ${statusType === 'success' ? 'rgba(34, 197, 94, 0.24)' : 'rgba(239, 68, 68, 0.24)'}`,
-                    color: statusType === 'success' ? '#166534' : '#991b1b',
-                    fontSize: '0.95rem',
-                    lineHeight: 1.5,
-                  }}>
-                    {statusMessage}
-                  </div>
-                )}
-
-                {editMode && (
-                  <div className="edit-panel">
-                    <h3>Edit Request</h3>
-                    <p className="edit-subtitle">
-                      Use natural language to revise the current extension files. Only requested changes will be applied.
-                    </p>
-                    {editingFile ? (
-                      <p style={{ margin: '0 0 12px', color: '#60a5fa' }}>
-                        Selected file: <strong>{editingFile}</strong>
-                      </p>
-                    ) : (
-                      <p style={{ margin: '0 0 12px', color: '#94a3b8' }}>
-                        Select a file above to begin editing.
-                      </p>
-                    )}
-                    <textarea
-                      placeholder="E.g., 'Make all buttons blue and add rounded corners.'"
-                      value={editPrompt}
-                      onChange={(e) => setEditPrompt(e.target.value)}
-                      className="edit-textarea"
-                      disabled={!editingFile || loading}
-                    />
-                    <div className="edit-buttons">
-                      <button 
-                        className="apply-btn"
-                        onClick={applyEdit}
-                        disabled={!editingFile || loading}
-                      >
-                        Apply Changes
-                      </button>
-                      <button 
-                        className="cancel-btn"
-                        onClick={cancelEdit}
-                        disabled={loading}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
               </>
-            )}
+            ) : !loading && !statusMessage ? (
+              <div className="empty-state">
+                <p>🎨 No files generated yet</p>
+                <small>Describe your extension and click Generate to get started</small>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -360,7 +403,7 @@ function Home({ onNavigate }) {
             <div className="history-items">
               {editHistory.map((item, idx) => (
                 <small key={idx} className="history-item">
-                  {item.filename} • {new Date(item.timestamp).toLocaleTimeString()}
+                  "{item.editRequest}" • {new Date(item.timestamp).toLocaleTimeString()}
                 </small>
               ))}
             </div>

@@ -1,35 +1,51 @@
 import Editor from "@monaco-editor/react";
-import { useState } from "react";
 
-function FilePreview({ files, editMode, selectedFile, onFileSelect }) {
-  const [expandedFile, setExpandedFile] = useState(null);
+function FilePreview({ files, selectedFile, onFileSelect, readOnly = true, onFileChange }) {
+  const fileNames = Object.keys(files || {});
+  const activeFile = selectedFile && files[selectedFile] ? selectedFile : fileNames[0] || null;
+  const activeContent = activeFile ? files[activeFile] : "";
 
   return (
     <div className="preview">
       <h2>Generated Files</h2>
 
-      {Object.entries(files).map(([filename, content]) => (
-        <div
-          className="file"
-          key={filename}
-          style={{
-            border: filename === selectedFile ? '1px solid #60a5fa' : '1px solid transparent',
-            borderRadius: '18px',
-            transition: 'border-color 0.2s ease',
-            marginBottom: '14px'
-          }}
-        >
-          <div className="file-header" style={{ cursor: editMode ? 'pointer' : 'default' }} onClick={() => editMode && onFileSelect(filename, content)}>
-            <h3>{filename}</h3>
-            {editMode && <span style={{ fontSize: '12px', color: '#888' }}>Click to edit</span>}
+      <div className="file-tabs" style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+        {fileNames.map((filename) => (
+          <button
+            key={filename}
+            type="button"
+            onClick={() => onFileSelect?.(filename, files[filename])}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: filename === activeFile ? "1px solid #60a5fa" : "1px solid rgba(255,255,255,0.12)",
+              background: filename === activeFile ? "rgba(96, 165, 250, 0.2)" : "transparent",
+              color: "inherit",
+              cursor: "pointer",
+              fontSize: "13px",
+            }}
+          >
+            {filename}
+          </button>
+        ))}
+      </div>
+
+      {activeFile ? (
+        <div className="file" key={activeFile}>
+          <div className="file-header">
+            <h3>{activeFile}</h3>
           </div>
           <div className="editor-container">
             <Editor
-              height="300px"
-              defaultLanguage={getLanguage(filename)}
-              value={content}
+              key={activeFile}
+              height="400px"
+              language={getLanguage(activeFile)}
+              value={activeContent}
+              onChange={(value) => {
+                onFileChange?.(activeFile, value || "");
+              }}
               options={{
-                readOnly: true,
+                readOnly: readOnly,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 fontSize: 13,
@@ -40,7 +56,7 @@ function FilePreview({ files, editMode, selectedFile, onFileSelect }) {
             />
           </div>
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }

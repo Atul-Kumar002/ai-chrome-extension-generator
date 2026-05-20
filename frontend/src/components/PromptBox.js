@@ -1,4 +1,4 @@
-function PromptBox({ prompt, setPrompt, generateExtension }) {
+function PromptBox({ prompt, setPrompt, onSubmit, editMode }) {
   const suggestions = [
     "🔒 Password manager that securely stores login credentials",
     "📱 Grammar checker that highlights typos and suggests fixes",
@@ -13,29 +13,35 @@ function PromptBox({ prompt, setPrompt, generateExtension }) {
 
   return (
     <div className="prompt-box">
-      <h3>What extension would you like to build?</h3>
+      <h3>{editMode ? "Edit your generated extension" : "What extension would you like to build?"}</h3>
       <textarea
-        placeholder="Describe your Chrome extension idea in detail..."
+        placeholder={
+          editMode
+            ? "Enter a natural language edit request for the current extension..."
+            : "Describe your Chrome extension idea in detail..."
+        }
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={(e) => {
-          if (e.ctrlKey && e.key === "Enter") generateExtension();
+          if (e.ctrlKey && e.key === "Enter") onSubmit();
         }}
       />
-      <div className="suggestions">
-        <p>Try a template:</p>
-        <div className="suggestion-chips">
-          {suggestions.map((suggestion, idx) => (
-            <button
-              key={idx}
-              className="chip"
-              onClick={() => insertSuggestion(suggestion)}
-            >
-              {suggestion}
-            </button>
-          ))}
+      {!editMode && (
+        <div className="suggestions">
+          <p>Try a template:</p>
+          <div className="suggestion-chips">
+            {suggestions.map((suggestion, idx) => (
+              <button
+                key={idx}
+                className="chip"
+                onClick={() => insertSuggestion(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

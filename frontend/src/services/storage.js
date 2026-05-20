@@ -70,7 +70,7 @@ export async function exportProjectZip(project) {
     });
 
     // include metadata
-    zip.file("manifest.json", JSON.stringify({
+    zip.file("extensio_metadata.json", JSON.stringify({
       id: project.id,
       title: project.title,
       prompt: project.prompt,

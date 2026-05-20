@@ -1,10 +1,9 @@
 import Groq from "groq-sdk";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { GROQ_API_KEY } from "../config/envConfig.js";
+import { logger } from "../utils/logger.js";
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: GROQ_API_KEY,
 });
 
 export async function generateExtensionCode(userPrompt) {
@@ -34,32 +33,37 @@ Rules:
 
 2. manifest.json MUST:
 - use Manifest V3
-- include required permissions
-- include content_scripts
+- include required permissions only when needed
+- include content_scripts for any DOM changes
 - properly inject content.js
+- NOT use unsafe content_security_policy values
+- NOT include remote URLs or external scripts
 
 3. content.js MUST:
 - contain COMPLETE working JavaScript
 - immediately execute
-- modify the DOM properly
+- modify the DOM using document.body.style or querySelector/querySelectorAll
+- NOT use eval(), Function(), new Function(), import(), or external network calls
 
-4. Do NOT use placeholders.
+4. popup.js MUST:
+- be a small local script that supports the extension popup if included
+- NOT use external resources or remote imports
 
-5. Do NOT explain anything.
+5. Do NOT use placeholders.
 
-6. Return RAW JSON ONLY.
+6. Do NOT explain anything.
 
-7. Escape quotes correctly.
+7. Return RAW JSON ONLY.
 
-8. Extensions MUST work immediately after installation.
+8. Escape quotes correctly.
 
-9. If user asks to modify website appearance:
-- use document.body.style
-- use querySelectorAll when needed
+9. Extensions MUST work immediately after installation.
 
-10. NEVER return markdown.
+10. If the user asks to change page styling, do it through content_scripts and DOM methods.
 
-11. Do NOT include icons in manifest.json unless actual image files are generated.
+11. NEVER return markdown.
+
+12. Do NOT include icons in manifest.json unless actual image files are generated.
 `;
 
     const response = await groq.chat.completions.create({
@@ -80,10 +84,6 @@ Rules:
     });
 
     const text = response.choices[0].message.content;
-
-    console.log("RAW AI RESPONSE:");
-    console.log(text);
-
     const cleanedText = text
       .replace(/```json/g, "")
       .replace(/```/g, "")
@@ -91,9 +91,7 @@ Rules:
 
     return JSON.parse(cleanedText);
   } catch (error) {
-    console.error("AI SERVICE ERROR:");
-    console.error(error);
-
+    logger.error("AI service error", { error: error?.message || error });
     throw new Error(error.message || "AI generation failed");
   }
 }
